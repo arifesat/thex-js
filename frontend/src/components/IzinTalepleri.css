@@ -1,0 +1,82 @@
+.izin-talepleri {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.izin-talepleri h2 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.talepler-listesi {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.talep-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.talep-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.talep-status {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-approved {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.talep-date {
+  color: #666;
+  font-size: 14px;
+}
+
+.talep-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.talep-dates, .talep-desc {
+  line-height: 1.5;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.error {
+  text-align: center;
+  padding: 20px;
+  color: #dc3545;
+  background-color: #f8d7da;
+  border-radius: 4px;
+  margin: 20px 0;
+} 
