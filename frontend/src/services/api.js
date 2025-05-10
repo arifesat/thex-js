@@ -82,6 +82,15 @@ export const izinService = {
       console.error('Talep güncelleme hatası:', error);
       throw error;
     }
+  },
+  analyzeTalep: async (talepId) => {
+    try {
+      const response = await api.post(`/izin/talep/${talepId}/analiz`);
+      return response.data;
+    } catch (error) {
+      console.error('Talep analiz hatası:', error);
+      throw error;
+    }
   }
 };
 

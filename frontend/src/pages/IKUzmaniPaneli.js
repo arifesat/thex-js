@@ -16,7 +16,12 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Alert
+  Alert,
+  CircularProgress,
+  List,
+  ListItem,
+  ListItemText,
+  Divider
 } from '@mui/material';
 import { izinService } from '../services/api';
 
@@ -24,8 +29,10 @@ const IKUzmaniPaneli = () => {
   const [talepler, setTalepler] = useState([]);
   const [selectedTalep, setSelectedTalep] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [openAnalysisDialog, setOpenAnalysisDialog] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [analyzing, setAnalyzing] = useState(false);
 
   useEffect(() => {
     fetchTalepler();
@@ -57,6 +64,22 @@ const IKUzmaniPaneli = () => {
     }
   };
 
+  const handleAnalyze = async (talep) => {
+    try {
+      setAnalyzing(true);
+      setSelectedTalep(talep);
+      const analyzedTalep = await izinService.analyzeTalep(talep._id);
+      setSelectedTalep(analyzedTalep);
+      setOpenAnalysisDialog(true);
+      fetchTalepler(); // Refresh the list to show updated analysis
+    } catch (error) {
+      console.error('Talep analiz edilemedi:', error);
+      setError('Talep analiz edilirken bir hata oluştu');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'Onaylandı':
@@ -72,26 +95,16 @@ const IKUzmaniPaneli = () => {
     return new Date(dateString).toLocaleDateString('tr-TR');
   };
 
-  const parseDateRange = (dateRangeStr) => {
-    if (!dateRangeStr || typeof dateRangeStr !== 'string') return { start: null, end: null };
+  const parseDateRange = (dateRange) => {
+    if (!dateRange) return { start: null, end: null, duration: 0 };
     
-    const [startDate, endDate] = dateRangeStr.split('-');
-    if (!startDate || !endDate) return { start: null, end: null };
+    const [start, end] = dateRange.split('-').map(date => {
+      const [day, month, year] = date.split('.');
+      return new Date(year, month - 1, day);
+    });
 
-    // Convert DD.MM.YYYY to YYYY-MM-DD format
-    const formatDateForParsing = (dateStr) => {
-      const [day, month, year] = dateStr.split('.');
-      return `${year}-${month}-${day}`;
-    };
-
-    const start = new Date(formatDateForParsing(startDate));
-    const end = new Date(formatDateForParsing(endDate));
-    
-    // Calculate the number of days between dates (inclusive)
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    
-    return { start, end, duration: diffDays };
+    const duration = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    return { start, end, duration };
   };
 
   return (
@@ -107,7 +120,9 @@ const IKUzmaniPaneli = () => {
       )}
 
       {loading ? (
-        <Typography>Yükleniyor...</Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <CircularProgress />
+        </Box>
       ) : (
         <TableContainer component={Paper}>
           <Table>
@@ -118,6 +133,7 @@ const IKUzmaniPaneli = () => {
                 <TableCell>İzin Tarihleri</TableCell>
                 <TableCell>Talep Edilen Gün</TableCell>
                 <TableCell>Kalan İzin Hakkı</TableCell>
+                <TableCell>Kıdem (Yıl)</TableCell>
                 <TableCell>Açıklama</TableCell>
                 <TableCell>Talep Zamanı</TableCell>
                 <TableCell>Durum</TableCell>
@@ -127,7 +143,7 @@ const IKUzmaniPaneli = () => {
             <TableBody>
               {talepler.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} align="center">
+                  <TableCell colSpan={10} align="center">
                     Henüz izin talebi bulunmamaktadır.
                   </TableCell>
                 </TableRow>
@@ -147,6 +163,7 @@ const IKUzmaniPaneli = () => {
                       </TableCell>
                       <TableCell>{duration} gün</TableCell>
                       <TableCell>{talep.remainingDays} gün</TableCell>
+                      <TableCell>{talep.kidem}</TableCell>
                       <TableCell>{talep.requestDesc}</TableCell>
                       <TableCell>{formatDate(talep.requestTime)}</TableCell>
                       <TableCell>
@@ -157,31 +174,30 @@ const IKUzmaniPaneli = () => {
                         />
                       </TableCell>
                       <TableCell>
-                        {talep.requestStatus === 'Bekliyor' && (
-                          <Box>
-                            <Button
-                              size="small"
-                              color="success"
-                              onClick={() => {
-                                setSelectedTalep(talep);
-                                setOpenDialog(true);
-                              }}
-                              sx={{ mr: 1 }}
-                            >
-                              Onayla
-                            </Button>
-                            <Button
-                              size="small"
-                              color="error"
-                              onClick={() => {
-                                setSelectedTalep(talep);
-                                setOpenDialog(true);
-                              }}
-                            >
-                              Reddet
-                            </Button>
-                          </Box>
-                        )}
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => handleAnalyze(talep)}
+                            disabled={analyzing}
+                          >
+                            {analyzing && selectedTalep?._id === talep._id ? (
+                              <CircularProgress size={20} />
+                            ) : (
+                              'AI Analiz'
+                            )}
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => {
+                              setSelectedTalep(talep);
+                              setOpenDialog(true);
+                            }}
+                          >
+                            İşlem
+                          </Button>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   );
@@ -192,6 +208,7 @@ const IKUzmaniPaneli = () => {
         </TableContainer>
       )}
 
+      {/* İşlem Dialog */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
         <DialogTitle>İzin Talebi Değerlendirme</DialogTitle>
         <DialogContent>
@@ -213,6 +230,57 @@ const IKUzmaniPaneli = () => {
           >
             Reddet
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* AI Analiz Dialog */}
+      <Dialog 
+        open={openAnalysisDialog} 
+        onClose={() => setOpenAnalysisDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>AI Analiz Sonucu</DialogTitle>
+        <DialogContent>
+          {selectedTalep?.aiAnalysis && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                {selectedTalep.adSoyad} (ID {selectedTalep.calisanId})
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                Talep Tarihi: {selectedTalep.requestedDates}
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                Durum: {selectedTalep.aiAnalysis.status}
+              </Typography>
+              
+              <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
+                Gerekçe:
+              </Typography>
+              <List>
+                {selectedTalep.aiAnalysis.gerekce.map((gerekce, index) => (
+                  <ListItem key={index}>
+                    <ListItemText primary={`• ${gerekce}`} />
+                  </ListItem>
+                ))}
+              </List>
+
+              {selectedTalep.aiAnalysis.alternatifOneri && (
+                <>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="h6" gutterBottom>
+                    Alternatif Öneri:
+                  </Typography>
+                  <Typography>
+                    {selectedTalep.aiAnalysis.alternatifOneri}
+                  </Typography>
+                </>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenAnalysisDialog(false)}>Kapat</Button>
         </DialogActions>
       </Dialog>
     </Container>

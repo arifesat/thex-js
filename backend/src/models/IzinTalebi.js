@@ -22,6 +22,17 @@ const izinTalebiSchema = new mongoose.Schema({
   requestDesc: {
     type: String,
     required: true
+  },
+  aiAnalysis: {
+    analysis: String,
+    timestamp: Date,
+    status: {
+      type: String,
+      enum: ['Onaylanmalıdır', 'Reddedilmelidir'],
+      default: null
+    },
+    gerekce: [String],
+    alternatifOneri: String
   }
 }, {
   timestamps: true,

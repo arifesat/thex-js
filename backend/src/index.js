@@ -2,13 +2,28 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 const jwt = require('jsonwebtoken');
+
+// Load environment variables
+const result = dotenv.config({ path: path.join(__dirname, '../.env') });
+
+if (result.error) {
+  console.error('Error loading .env file:', result.error);
+  process.exit(1);
+}
+
+// Log environment variables (without sensitive data)
+console.log('Environment loaded:', {
+  NODE_ENV: process.env.NODE_ENV,
+  PORT: process.env.PORT,
+  hasOpenAIKey: !!process.env.OPENAI_API_KEY,
+  openAIKeyLength: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.length : 0
+});
 
 // Routes
 const authRoutes = require('./routes/auth');
 const izinRoutes = require('./routes/izin');
-
-dotenv.config();
 
 const app = express();
 

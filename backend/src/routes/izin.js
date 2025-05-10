@@ -3,6 +3,17 @@ const router = express.Router();
 const IzinTalebi = require('../models/IzinTalebi');
 const User = require('../models/User');
 const { auth, isIKUzmani } = require('../middleware/auth');
+const { analyzeIzinTalebi } = require('../services/openaiService');
+
+// Test endpoint for environment variables
+router.get('/test-env', (req, res) => {
+  res.json({
+    hasOpenAIKey: !!process.env.OPENAI_API_KEY,
+    openAIKeyLength: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.length : 0,
+    nodeEnv: process.env.NODE_ENV,
+    port: process.env.PORT
+  });
+});
 
 // Yeni izin talebi oluştur
 router.post('/talep', auth, async (req, res) => {
@@ -29,6 +40,66 @@ router.post('/talep', auth, async (req, res) => {
     console.error('İzin talebi oluşturma hatası:', error);
     res.status(500).json({ 
       error: 'İzin talebi oluşturulamadı',
+      details: error.message 
+    });
+  }
+});
+
+// İzin talebi analizi
+router.post('/talep/:id/analiz', auth, isIKUzmani, async (req, res) => {
+  try {
+    const talep = await IzinTalebi.findById(req.params.id);
+    if (!talep) {
+      return res.status(404).json({ error: 'İzin talebi bulunamadı' });
+    }
+
+    const calisan = await User.findOne({ calisanId: talep.calisanId });
+    if (!calisan) {
+      return res.status(404).json({ error: 'Çalışan bulunamadı' });
+    }
+
+    // Departman kotası hesaplama (örnek)
+    const departmanKotalari = {
+      kalanKota: 2, // Bu değer gerçek veritabanından gelmeli
+      toplamKota: 5  // Bu değer gerçek veritabanından gelmeli
+    };
+
+    const calisanBilgileri = {
+      adSoyad: calisan.adSoyad,
+      calisanId: calisan.calisanId,
+      kidem: Math.floor((new Date() - new Date(calisan.workStartDate)) / (1000 * 60 * 60 * 24 * 365)),
+      remainingDays: calisan.remainingDays
+    };
+
+    const analysis = await analyzeIzinTalebi(talep, calisanBilgileri, departmanKotalari);
+    
+    // AI analizini parse et
+    const analysisLines = analysis.analysis.split('\n');
+    const status = analysisLines.find(line => line.startsWith('Durum:'))?.split(':')[1]?.trim();
+    const gerekce = analysisLines
+      .filter(line => line.trim().startsWith('-'))
+      .map(line => line.trim().substring(1).trim());
+    const alternatifOneri = analysisLines
+      .find(line => line.startsWith('Alternatif Öneri:'))
+      ?.split(':')[1]
+      ?.trim();
+
+    // Analizi kaydet
+    talep.aiAnalysis = {
+      analysis: analysis.analysis,
+      timestamp: analysis.timestamp,
+      status,
+      gerekce,
+      alternatifOneri
+    };
+
+    await talep.save();
+    
+    res.json(talep);
+  } catch (error) {
+    console.error('İzin talebi analiz hatası:', error);
+    res.status(500).json({ 
+      error: 'İzin talebi analiz edilemedi',
       details: error.message 
     });
   }
@@ -82,7 +153,8 @@ router.get('/talepler', auth, isIKUzmani, async (req, res) => {
         ...talepObj,
         requestTime: new Date(talepObj.requestTime).toISOString(),
         adSoyad: user ? user.adSoyad : 'Bilinmiyor',
-        remainingDays: user ? user.remainingDays : 0
+        remainingDays: user ? user.remainingDays : 0,
+        kidem: user ? Math.floor((new Date() - new Date(user.workStartDate)) / (1000 * 60 * 60 * 24 * 365)) : 0
       };
     }));
 
