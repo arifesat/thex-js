@@ -36,6 +36,7 @@ const IKUzmaniPaneli = () => {
       setLoading(true);
       setError('');
       const response = await izinService.getAllTalepler();
+      console.log('API Response:', response);
       setTalepler(response || []);
     } catch (error) {
       console.error('Talepler getirilemedi:', error);
@@ -71,6 +72,28 @@ const IKUzmaniPaneli = () => {
     return new Date(dateString).toLocaleDateString('tr-TR');
   };
 
+  const parseDateRange = (dateRangeStr) => {
+    if (!dateRangeStr || typeof dateRangeStr !== 'string') return { start: null, end: null };
+    
+    const [startDate, endDate] = dateRangeStr.split('-');
+    if (!startDate || !endDate) return { start: null, end: null };
+
+    // Convert DD.MM.YYYY to YYYY-MM-DD format
+    const formatDateForParsing = (dateStr) => {
+      const [day, month, year] = dateStr.split('.');
+      return `${year}-${month}-${day}`;
+    };
+
+    const start = new Date(formatDateForParsing(startDate));
+    const end = new Date(formatDateForParsing(endDate));
+    
+    // Calculate the number of days between dates (inclusive)
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    
+    return { start, end, duration: diffDays };
+  };
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Typography variant="h4" gutterBottom>
@@ -91,7 +114,10 @@ const IKUzmaniPaneli = () => {
             <TableHead>
               <TableRow>
                 <TableCell>Çalışan ID</TableCell>
+                <TableCell>Ad Soyad</TableCell>
                 <TableCell>İzin Tarihleri</TableCell>
+                <TableCell>Talep Edilen Gün</TableCell>
+                <TableCell>Kalan İzin Hakkı</TableCell>
                 <TableCell>Açıklama</TableCell>
                 <TableCell>Talep Zamanı</TableCell>
                 <TableCell>Durum</TableCell>
@@ -101,57 +127,65 @@ const IKUzmaniPaneli = () => {
             <TableBody>
               {talepler.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center">
+                  <TableCell colSpan={9} align="center">
                     Henüz izin talebi bulunmamaktadır.
                   </TableCell>
                 </TableRow>
               ) : (
-                talepler.map((talep) => (
-                  <TableRow key={talep._id}>
-                    <TableCell>{talep.calisanId}</TableCell>
-                    <TableCell>
-                      {talep.requestedDates.map((date, index) => (
-                        <div key={index}>{formatDate(date)}</div>
-                      ))}
-                    </TableCell>
-                    <TableCell>{talep.requestDesc}</TableCell>
-                    <TableCell>{formatDate(talep.requestTime)}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={talep.requestStatus}
-                        color={getStatusColor(talep.requestStatus)}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {talep.requestStatus === 'Bekliyor' && (
-                        <Box>
-                          <Button
-                            size="small"
-                            color="success"
-                            onClick={() => {
-                              setSelectedTalep(talep);
-                              setOpenDialog(true);
-                            }}
-                            sx={{ mr: 1 }}
-                          >
-                            Onayla
-                          </Button>
-                          <Button
-                            size="small"
-                            color="error"
-                            onClick={() => {
-                              setSelectedTalep(talep);
-                              setOpenDialog(true);
-                            }}
-                          >
-                            Reddet
-                          </Button>
-                        </Box>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
+                talepler.map((talep) => {
+                  const { start, end, duration } = parseDateRange(talep.requestedDates);
+                  return (
+                    <TableRow key={talep._id}>
+                      <TableCell>{talep.calisanId}</TableCell>
+                      <TableCell>{talep.adSoyad}</TableCell>
+                      <TableCell>
+                        {start && end && (
+                          <div>
+                            {formatDate(start)} - {formatDate(end)}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>{duration} gün</TableCell>
+                      <TableCell>{talep.remainingDays} gün</TableCell>
+                      <TableCell>{talep.requestDesc}</TableCell>
+                      <TableCell>{formatDate(talep.requestTime)}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={talep.requestStatus}
+                          color={getStatusColor(talep.requestStatus)}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {talep.requestStatus === 'Bekliyor' && (
+                          <Box>
+                            <Button
+                              size="small"
+                              color="success"
+                              onClick={() => {
+                                setSelectedTalep(talep);
+                                setOpenDialog(true);
+                              }}
+                              sx={{ mr: 1 }}
+                            >
+                              Onayla
+                            </Button>
+                            <Button
+                              size="small"
+                              color="error"
+                              onClick={() => {
+                                setSelectedTalep(talep);
+                                setOpenDialog(true);
+                              }}
+                            >
+                              Reddet
+                            </Button>
+                          </Box>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

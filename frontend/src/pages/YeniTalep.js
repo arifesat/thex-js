@@ -13,28 +13,31 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { tr } from 'date-fns/locale';
+import { format } from 'date-fns';
 import { izinService } from '../services/api';
 
 const YeniTalep = () => {
   const navigate = useNavigate();
-  const [selectedDates, setSelectedDates] = useState([]);
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
   const [requestDesc, setRequestDesc] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleDateChange = (date) => {
-    if (date) {
-      // Tarihi ISO string formatına çevir
-      const isoDate = date.toISOString();
-      setSelectedDates(prev => [...prev, isoDate]);
-    }
+  const formatDateForDB = (date) => {
+    return format(date, 'dd.MM.yyyy');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (selectedDates.length === 0) {
-      setError('Lütfen en az bir tarih seçin');
+    if (!startDate || !endDate) {
+      setError('Lütfen başlangıç ve bitiş tarihlerini seçin');
+      return;
+    }
+
+    if (startDate > endDate) {
+      setError('Bitiş tarihi başlangıç tarihinden önce olamaz');
       return;
     }
 
@@ -47,8 +50,11 @@ const YeniTalep = () => {
       setLoading(true);
       setError('');
       
+      const dateRange = `${formatDateForDB(startDate)}-${formatDateForDB(endDate)}`;
+      console.log('Gönderilecek tarih aralığı:', dateRange);
+      
       const response = await izinService.createTalep({
-        requestedDates: selectedDates,
+        requestedDates: dateRange,
         requestDesc: requestDesc.trim()
       });
 
@@ -60,10 +66,6 @@ const YeniTalep = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const removeDate = (indexToRemove) => {
-    setSelectedDates(prev => prev.filter((_, index) => index !== indexToRemove));
   };
 
   return (
@@ -85,40 +87,29 @@ const YeniTalep = () => {
               <Typography variant="subtitle1" gutterBottom>
                 İzin Tarihleri
               </Typography>
-              <DatePicker
-                label="Tarih Seçin"
-                onChange={handleDateChange}
-                renderInput={(params) => <TextField {...params} fullWidth />}
-                sx={{ mb: 2 }}
-              />
+              <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                <DatePicker
+                  label="Başlangıç Tarihi"
+                  value={startDate}
+                  onChange={setStartDate}
+                  renderInput={(params) => <TextField {...params} fullWidth />}
+                />
+                <DatePicker
+                  label="Bitiş Tarihi"
+                  value={endDate}
+                  onChange={setEndDate}
+                  renderInput={(params) => <TextField {...params} fullWidth />}
+                />
+              </Box>
               
-              {selectedDates.length > 0 && (
+              {startDate && endDate && (
                 <Box sx={{ mt: 2 }}>
                   <Typography variant="subtitle2" gutterBottom>
-                    Seçilen Tarihler:
+                    Seçilen Tarih Aralığı:
                   </Typography>
-                  {selectedDates.map((date, index) => (
-                    <Box 
-                      key={index} 
-                      sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: 1,
-                        mb: 1 
-                      }}
-                    >
-                      <Typography>
-                        {new Date(date).toLocaleDateString('tr-TR')}
-                      </Typography>
-                      <Button 
-                        size="small" 
-                        color="error"
-                        onClick={() => removeDate(index)}
-                      >
-                        Kaldır
-                      </Button>
-                    </Box>
-                  ))}
+                  <Typography>
+                    {format(startDate, 'dd MMMM yyyy', { locale: tr })} - {format(endDate, 'dd MMMM yyyy', { locale: tr })}
+                  </Typography>
                 </Box>
               )}
             </Box>

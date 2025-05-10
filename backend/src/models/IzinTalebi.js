@@ -10,10 +10,10 @@ const izinTalebiSchema = new mongoose.Schema({
     required: true,
     default: Date.now
   },
-  requestedDates: [{
-    type: Date,
+  requestedDates: {
+    type: String,
     required: true
-  }],
+  },
   requestStatus: {
     type: String,
     enum: ['Bekliyor', 'Onaylandı', 'Reddedildi'],
@@ -22,10 +22,6 @@ const izinTalebiSchema = new mongoose.Schema({
   requestDesc: {
     type: String,
     required: true
-  },
-  _class: {
-    type: String,
-    default: 'com.izin_talebi.izin_talebi_spring.model.IzinTalebi'
   }
 }, {
   timestamps: true,

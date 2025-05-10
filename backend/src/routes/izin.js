@@ -1,29 +1,30 @@
 const express = require('express');
 const router = express.Router();
 const IzinTalebi = require('../models/IzinTalebi');
+const User = require('../models/User');
 const { auth, isIKUzmani } = require('../middleware/auth');
 
 // Yeni izin talebi oluştur
 router.post('/talep', auth, async (req, res) => {
   try {
     const { requestedDates, requestDesc } = req.body;
+    console.log('Gelen talep verisi:', { requestedDates, requestDesc });
     
-    if (!requestedDates || !Array.isArray(requestedDates)) {
+    if (!requestedDates || typeof requestedDates !== 'string') {
       return res.status(400).json({ error: 'Geçersiz tarih formatı' });
     }
 
-    // Tarihleri Date nesnesine çevir
-    const formattedDates = requestedDates.map(date => new Date(date));
-    
     const izinTalebi = new IzinTalebi({
       calisanId: req.user.calisanId,
-      requestedDates: formattedDates,
+      requestedDates,
       requestDesc,
       requestTime: new Date()
     });
 
-    await izinTalebi.save();
-    res.status(201).json(izinTalebi);
+    const savedTalep = await izinTalebi.save();
+    console.log('Kaydedilen talep:', savedTalep);
+    
+    res.status(201).json(savedTalep);
   } catch (error) {
     console.error('İzin talebi oluşturma hatası:', error);
     res.status(500).json({ 
@@ -48,13 +49,11 @@ router.get('/taleplerim', auth, async (req, res) => {
       const talepObj = talep.toObject();
       return {
         ...talepObj,
-        requestedDates: Array.isArray(talepObj.requestedDates) 
-          ? talepObj.requestedDates.map(date => new Date(date).toISOString())
-          : [],
         requestTime: new Date(talepObj.requestTime).toISOString()
       };
     });
 
+    console.log('Gönderilen talepler:', formattedTalepler);
     res.json(formattedTalepler);
   } catch (error) {
     console.error('Talepler getirme hatası:', error);
@@ -75,19 +74,20 @@ router.get('/talepler', auth, isIKUzmani, async (req, res) => {
 
     console.log('Bulunan talepler:', talepler);
 
-    // Tarihleri ISO string formatına çevir
-    const formattedTalepler = talepler.map(talep => {
+    // Her talep için çalışan bilgilerini getir
+    const taleplerWithUserInfo = await Promise.all(talepler.map(async (talep) => {
+      const user = await User.findOne({ calisanId: talep.calisanId });
       const talepObj = talep.toObject();
       return {
         ...talepObj,
-        requestedDates: Array.isArray(talepObj.requestedDates) 
-          ? talepObj.requestedDates.map(date => new Date(date).toISOString())
-          : [],
-        requestTime: new Date(talepObj.requestTime).toISOString()
+        requestTime: new Date(talepObj.requestTime).toISOString(),
+        adSoyad: user ? user.adSoyad : 'Bilinmiyor',
+        remainingDays: user ? user.remainingDays : 0
       };
-    });
+    }));
 
-    res.json(formattedTalepler);
+    console.log('Gönderilen talepler:', taleplerWithUserInfo);
+    res.json(taleplerWithUserInfo);
   } catch (error) {
     console.error('Talepler getirme hatası:', error);
     res.status(500).json({ 
@@ -120,12 +120,10 @@ router.put('/talep/:id', auth, isIKUzmani, async (req, res) => {
     const talepObj = talep.toObject();
     const formattedTalep = {
       ...talepObj,
-      requestedDates: Array.isArray(talepObj.requestedDates) 
-        ? talepObj.requestedDates.map(date => new Date(date).toISOString())
-        : [],
       requestTime: new Date(talepObj.requestTime).toISOString()
     };
-
+    
+    console.log('Gönderilen güncellenmiş talep:', formattedTalep);
     res.json(formattedTalep);
   } catch (error) {
     console.error('Talep güncelleme hatası:', error);

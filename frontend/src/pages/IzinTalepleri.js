@@ -16,7 +16,7 @@ import {
   Alert,
   CircularProgress
 } from '@mui/material';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { izinService } from '../services/api';
 
@@ -35,7 +35,17 @@ const IzinTalepleri = () => {
       setLoading(true);
       setError(null);
       const response = await izinService.getTaleplerim();
-      console.log('API Response:', response); // Debug için
+      console.log('API Response:', response);
+      
+      // Debug log for each talep
+      response.forEach((talep, index) => {
+        console.log(`Talep ${index}:`, {
+          id: talep._id,
+          requestedDates: talep.requestedDates,
+          type: typeof talep.requestedDates
+        });
+      });
+      
       setTalepler(response || []);
     } catch (err) {
       console.error('Talepler getirilemedi:', err);
@@ -47,10 +57,36 @@ const IzinTalepleri = () => {
 
   const formatDate = (dateString) => {
     try {
-      return format(new Date(dateString), 'dd MMMM yyyy', { locale: tr });
+      if (!dateString) {
+        return 'Geçersiz tarih';
+      }
+      
+      // Tarih formatını dönüştür (DD.MM.YYYY -> YYYY-MM-DD)
+      const [day, month, year] = dateString.split('.');
+      const isoDate = `${year}-${month}-${day}`;
+      
+      const date = parseISO(isoDate);
+      return format(date, 'dd MMMM yyyy', { locale: tr });
     } catch (error) {
-      console.error('Tarih formatlama hatası:', error);
+      console.error('Tarih formatlama hatası:', error, 'Tarih:', dateString);
       return dateString;
+    }
+  };
+
+  const formatDateRange = (dateRange) => {
+    try {
+      console.log('Formatting date range:', dateRange, 'Type:', typeof dateRange);
+      
+      if (!dateRange || typeof dateRange !== 'string' || !dateRange.includes('-')) {
+        console.error('Invalid date range:', dateRange);
+        return 'Geçersiz tarih aralığı';
+      }
+
+      const [startDate, endDate] = dateRange.split('-');
+      return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+    } catch (error) {
+      console.error('Tarih aralığı formatlama hatası:', error, 'Date range:', dateRange);
+      return dateRange;
     }
   };
 
@@ -110,27 +146,22 @@ const IzinTalepleri = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {talepler.map((talep) => (
-                <TableRow key={talep._id}>
-                  <TableCell>{formatDate(talep.requestTime)}</TableCell>
-                  <TableCell>
-                    {Array.isArray(talep.requestedDates) ? (
-                      talep.requestedDates.map((date, index) => (
-                        <div key={index}>{formatDate(date)}</div>
-                      ))
-                    ) : (
-                      <div>Geçersiz tarih formatı</div>
-                    )}
-                  </TableCell>
-                  <TableCell>{talep.requestDesc}</TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={talep.requestStatus} 
-                      color={getStatusColor(talep.requestStatus)}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
+              {talepler.map((talep) => {
+                console.log('Rendering talep:', talep);
+                return (
+                  <TableRow key={talep._id}>
+                    <TableCell>{formatDate(talep.requestTime)}</TableCell>
+                    <TableCell>{formatDateRange(talep.requestedDates)}</TableCell>
+                    <TableCell>{talep.requestDesc}</TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={talep.requestStatus} 
+                        color={getStatusColor(talep.requestStatus)}
+                      />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </TableContainer>
