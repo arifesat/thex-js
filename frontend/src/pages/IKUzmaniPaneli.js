@@ -396,54 +396,61 @@ const IKUzmaniPaneli = () => {
                 <Chip
                   label={selectedTalep.aiAnalysis.status}
                   color={selectedTalep.aiAnalysis.status === 'Reddedilmelidir' ? 'error' : 'success'}
-                  gutterBottom
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: '1rem',
+                    py: 2,
+                    px: 1
+                  }}
+                />
+              </Box>
+              
+              <List sx={{ 
+                py: 0,
+                '& .MuiListItem-root': {
+                  px: 0
+                }
+              }}>
+                {selectedTalep.aiAnalysis.gerekce.map((gerekce, index) => (
+                  <ListItem key={index} sx={{ py: 1.5 }}>
+                    <ListItemText 
+                      primary={gerekce}
+                      primaryTypographyProps={{
+                        color: selectedTalep.aiAnalysis.status === 'Reddedilmelidir' ? 'error.main' : 'success.main',
+                        fontSize: '1.1rem',
+                        fontWeight: 600,
+                        lineHeight: 1.6,
+                        letterSpacing: '0.3px'
+                      }}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+
+              <Box sx={{ 
+                mt: 4, 
+                p: 3, 
+                bgcolor: 'rgba(0,0,0,0.02)', 
+                borderRadius: 1.5,
+                border: '2px solid',
+                borderColor: selectedTalep.aiAnalysis.status === 'Reddedilmelidir' ? 'error.light' : 'success.light'
+              }}>
+                <Typography
+                  component="pre"
+                  sx={{
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    fontSize: '0.9rem',
+                    color: selectedTalep.aiAnalysis.status === 'Reddedilmelidir' ? 'error.main' : 'success.main',
+                    lineHeight: 1.6,
+                    fontFamily: 'inherit',
+                    m: 0,
+                    fontWeight: 400,
+                    letterSpacing: '0.2px'
+                  }}
                 >
-                  Durum: {selectedTalep.aiAnalysis.status}
+                  {selectedTalep.aiAnalysis.analysis}
                 </Typography>
-                
-                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
-                  Gerekçeler:
-                </Typography>
-                <List>
-                  {selectedTalep.aiAnalysis.gerekce.map((gerekce, index) => (
-                    <ListItem key={index} sx={{ py: 0.5 }}>
-                      <ListItemText 
-                        primary={`• ${gerekce}`}
-                        primaryTypographyProps={{
-                          color: selectedTalep.aiAnalysis.status === 'Reddedilmelidir' ? 'error' : 'success'
-                        }}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-
-                <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(0,0,0,0.03)', borderRadius: 1 }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Detaylı Açıklama:
-                  </Typography>
-                  <Typography
-                    component="pre"
-                    sx={{
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                      fontSize: '0.875rem',
-                      color: selectedTalep.aiAnalysis.status === 'Reddedilmelidir' ? 'error.main' : 'success.main'
-                    }}
-                  >
-                    {selectedTalep.aiAnalysis.analysis}
-                  </Typography>
-                </Box>
-
-                {selectedTalep.aiAnalysis.alternatifOneri && (
-                  <Box sx={{ mt: 2, pt: 2, borderTop: '1px dashed #ccc' }}>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Alternatif Öneri:
-                    </Typography>
-                    <Typography>
-                      {selectedTalep.aiAnalysis.alternatifOneri}
-                    </Typography>
-                  </Box>
-                )}
               </Box>
             </Box>
           )}
