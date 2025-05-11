@@ -69,6 +69,10 @@ export const izinService = {
   analyzeTalep: async (talepId) => {
     const response = await api.post(`/izin/talep/${talepId}/analiz`);
     return response.data;
+  },
+  updateTalepStatus: async (talepId, newStatus) => {
+    const response = await api.put(`/izin/talep/${talepId}`, { requestStatus: newStatus });
+    return response.data;
   }
 };
 

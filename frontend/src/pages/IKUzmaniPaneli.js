@@ -96,7 +96,7 @@ const IKUzmaniPaneli = () => {
   const formatDate = (dateString) => {
     try {
       const date = new Date(dateString);
-      return format(date, 'dd.MM.yyyy HH:mm', { locale: tr });
+      return format(date, 'dd.MM.yyyy', { locale: tr });
     } catch (error) {
       console.error('Tarih formatlama hatası:', error);
       return dateString;
