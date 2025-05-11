@@ -312,9 +312,9 @@ const IKUzmaniPaneli = () => {
                   Durum: {selectedTalep.aiAnalysis.status}
                 </Typography>
                 
-                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
+                {/* <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
                   Gerekçeler:
-                </Typography>
+                </Typography> */}
                 <List>
                   {selectedTalep.aiAnalysis.gerekce.map((gerekce, index) => (
                     <ListItem key={index} sx={{ py: 0.5 }}>
@@ -329,9 +329,9 @@ const IKUzmaniPaneli = () => {
                 </List>
 
                 <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(0,0,0,0.03)', borderRadius: 1 }}>
-                  <Typography variant="subtitle2" gutterBottom>
+                  {/* <Typography variant="subtitle2" gutterBottom>
                     Detaylı Açıklama:
-                  </Typography>
+                  </Typography> */}
                   <Typography
                     component="pre"
                     sx={{
