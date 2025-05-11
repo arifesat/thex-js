@@ -689,6 +689,8 @@ const IKUzmaniPaneli = () => {
                           name="İzin Talebi Sayısı" 
                           stroke="#8884d8" 
                           strokeWidth={2}
+                          dot={false}
+                          activeDot={{ r: 7, fill: '#8884d8', stroke: '#fff', strokeWidth: 2 }}
                         />
                       </LineChart>
                     </ResponsiveContainer>
