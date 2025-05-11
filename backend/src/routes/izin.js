@@ -120,7 +120,9 @@ router.post('/talep/:id/analiz', auth, isIKUzmani, async (req, res) => {
     const calisanBilgileri = {
       adSoyad: calisan.adSoyad,
       calisanId: calisan.calisanId,
-      kidem: Math.floor((new Date() - new Date(calisan.workStartDate)) / (1000 * 60 * 60 * 24 * 365)),
+      pozisyon: calisan.pozisyon,
+      pozisyonSeviyesi: calisan.pozisyonSeviyesi,
+      workStartDate: calisan.workStartDate,
       remainingDays: calisan.remainingDays
     };
 

@@ -21,7 +21,26 @@ const userSchema = new mongoose.Schema({
   },
   pozisyon: {
     type: String,
-    required: true
+    required: true,
+    enum: ['Çalışan', 'Şef', 'Müdür', 'Uzman', 'İK Uzmanı']
+  },
+  pozisyonSeviyesi: {
+    type: Number,
+    required: true,
+    default: 1,
+    validate: {
+      validator: function(v) {
+        const seviyeler = {
+          'Çalışan': 1,
+          'Şef': 2,
+          'Müdür': 3,
+          'Uzman': 2,
+          'İK Uzmanı': 2
+        };
+        return v === seviyeler[this.pozisyon];
+      },
+      message: 'Pozisyon seviyesi pozisyon ile uyumlu olmalıdır'
+    }
   },
   workStartDate: {
     type: Date,
