@@ -250,6 +250,7 @@ Alternatif Öneri: [Bu çalışan için uygun olabilecek alternatif tarih aralı
 11) Alternatif öneri verirken çalışanın kalan izin hakkı ve departman kotasını göz önünde bulundur
 12) 1. derece yakınlarla ilgili önemli durumlarda (hastalık, ameliyat, doğum, ölüm vb.) izin taleplerini öncelikli olarak değerlendir
 13) 1. derece yakın durumlarında, diğer kısıtlamaları (yaz kotası, departman kotası vb.) ikincil planda tut
+
 `
         },
         {

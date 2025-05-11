@@ -297,32 +297,65 @@ const IKUzmaniPaneli = () => {
               <Typography variant="subtitle1" gutterBottom>
                 Talep Tarihi: {selectedTalep.requestedDates}
               </Typography>
-              <Typography variant="subtitle1" gutterBottom>
-                Durum: {selectedTalep.aiAnalysis.status}
-              </Typography>
               
-              <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
-                Gerekçe:
-              </Typography>
-              <List>
-                {selectedTalep.aiAnalysis.gerekce.map((gerekce, index) => (
-                  <ListItem key={index}>
-                    <ListItemText primary={`• ${gerekce}`} />
-                  </ListItem>
-                ))}
-              </List>
+              <Box sx={{ 
+                mt: 2, 
+                p: 2, 
+                bgcolor: selectedTalep.aiAnalysis.status === 'Reddedilmelidir' ? '#fff3f3' : '#f3fff3',
+                borderRadius: 1
+              }}>
+                <Typography 
+                  variant="h6" 
+                  color={selectedTalep.aiAnalysis.status === 'Reddedilmelidir' ? 'error' : 'success'}
+                  gutterBottom
+                >
+                  Durum: {selectedTalep.aiAnalysis.status}
+                </Typography>
+                
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
+                  Gerekçeler:
+                </Typography>
+                <List>
+                  {selectedTalep.aiAnalysis.gerekce.map((gerekce, index) => (
+                    <ListItem key={index} sx={{ py: 0.5 }}>
+                      <ListItemText 
+                        primary={`• ${gerekce}`}
+                        primaryTypographyProps={{
+                          color: selectedTalep.aiAnalysis.status === 'Reddedilmelidir' ? 'error' : 'success'
+                        }}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
 
-              {selectedTalep.aiAnalysis.alternatifOneri && (
-                <>
-                  <Divider sx={{ my: 2 }} />
-                  <Typography variant="h6" gutterBottom>
-                    Alternatif Öneri:
+                <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(0,0,0,0.03)', borderRadius: 1 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Detaylı Açıklama:
                   </Typography>
-                  <Typography>
-                    {selectedTalep.aiAnalysis.alternatifOneri}
+                  <Typography
+                    component="pre"
+                    sx={{
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      fontSize: '0.875rem',
+                      color: selectedTalep.aiAnalysis.status === 'Reddedilmelidir' ? 'error.main' : 'success.main'
+                    }}
+                  >
+                    {selectedTalep.aiAnalysis.analysis}
                   </Typography>
-                </>
-              )}
+                </Box>
+
+                {selectedTalep.aiAnalysis.alternatifOneri && (
+                  <Box sx={{ mt: 2, pt: 2, borderTop: '1px dashed #ccc' }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Alternatif Öneri:
+                    </Typography>
+                    <Typography>
+                      {selectedTalep.aiAnalysis.alternatifOneri}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
             </Box>
           )}
         </DialogContent>
