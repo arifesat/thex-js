@@ -38,7 +38,14 @@ export const authService = {
   },
   getCurrentUser: () => {
     const userStr = localStorage.getItem('user');
-    if (userStr) return JSON.parse(userStr);
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      // Convert workStartDate string to Date object if it exists
+      if (user.workStartDate) {
+        user.workStartDate = new Date(user.workStartDate);
+      }
+      return user;
+    }
     return null;
   },
   getCurrentToken: () => {
@@ -47,50 +54,21 @@ export const authService = {
 };
 
 export const izinService = {
-  createTalep: async (talepData) => {
-    try {
-      const response = await api.post('/izin/talep', talepData);
-      return response.data;
-    } catch (error) {
-      console.error('İzin talebi oluşturma hatası:', error);
-      throw error;
-    }
+  createTalep: async (data) => {
+    const response = await api.post('/izin/talep', data);
+    return response.data;
   },
   getTaleplerim: async () => {
-    try {
-      const response = await api.get('/izin/taleplerim');
-      return response.data;
-    } catch (error) {
-      console.error('Talepler getirme hatası:', error);
-      throw error;
-    }
+    const response = await api.get('/izin/taleplerim');
+    return response.data;
   },
   getAllTalepler: async () => {
-    try {
-      const response = await api.get('/izin/talepler');
-      return response.data;
-    } catch (error) {
-      console.error('Tüm talepler getirme hatası:', error);
-      throw error;
-    }
-  },
-  updateTalepStatus: async (talepId, newStatus) => {
-    try {
-      const response = await api.put(`/izin/talep/${talepId}`, { requestStatus: newStatus });
-      return response.data;
-    } catch (error) {
-      console.error('Talep güncelleme hatası:', error);
-      throw error;
-    }
+    const response = await api.get('/izin/talepler');
+    return response.data;
   },
   analyzeTalep: async (talepId) => {
-    try {
-      const response = await api.post(`/izin/talep/${talepId}/analiz`);
-      return response.data;
-    } catch (error) {
-      console.error('Talep analiz hatası:', error);
-      throw error;
-    }
+    const response = await api.post(`/izin/talep/${talepId}/analiz`);
+    return response.data;
   }
 };
 

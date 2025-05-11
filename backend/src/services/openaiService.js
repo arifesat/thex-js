@@ -29,10 +29,31 @@ const calculateWorkingDays = (startDate, endDate) => {
 // Kıdem hesaplama fonksiyonu
 const calculateSeniority = (startDate) => {
   const start = new Date(startDate);
-  const referenceDate = new Date('2024-01-01');
-  const diffTime = Math.abs(referenceDate - start);
-  const diffYears = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 365));
-  return diffYears;
+  const now = new Date();
+  
+  // Toplam gün sayısını hesapla
+  const diffTime = Math.abs(now - start);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  // Yıl olarak hesapla (ondalıklı)
+  const years = diffDays / 365;
+  
+  // 0.5'e yuvarla (6 aylık hassasiyet)
+  return Math.round(years * 2) / 2;
+};
+
+// İşe başlama süresi kontrolü (6 ay)
+const checkWorkDuration = (startDate, seniority) => {
+  // Eğer kıdem 1 yıl veya daha fazlaysa, 6 ay kontrolü yapmaya gerek yok
+  if (seniority >= 1) {
+    return true;
+  }
+
+  const start = new Date(startDate);
+  const now = new Date();
+  const diffTime = Math.abs(now - start);
+  const diffMonths = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 30)); // Approximate months
+  return diffMonths >= 6;
 };
 
 // İzin hakkı hesaplama fonksiyonu
@@ -109,6 +130,29 @@ const checkBridgeHoliday = (startDate, endDate) => {
   return false;
 };
 
+// 1. derece yakın kontrolü
+const isFirstDegreeRelativeRelated = (requestDesc) => {
+  const firstDegreeKeywords = [
+    'anne', 'baba', 'eş', 'çocuk', 'kardeş',
+    'babaanne', 'anneanne', 'dede', 'kayınpeder', 'kayınvalide',
+    'gelin', 'damat', 'evlat'
+  ];
+  
+  const importantKeywords = [
+    'hastalık', 'hasta', 'ameliyat', 'tedavi', 'doğum',
+    'ölüm', 'cenaze', 'nikah', 'düğün', 'acil',
+    'kaza', 'yaralanma', 'operasyon'
+  ];
+
+  const desc = requestDesc.toLowerCase();
+  
+  // Hem 1. derece yakın hem de önemli bir durum içeriyor mu kontrol et
+  const hasFirstDegree = firstDegreeKeywords.some(keyword => desc.includes(keyword));
+  const isImportant = importantKeywords.some(keyword => desc.includes(keyword));
+  
+  return hasFirstDegree && isImportant;
+};
+
 const analyzeIzinTalebi = async (izinTalebi, calisanBilgileri, departmanKotalari) => {
   try {
     // İzin tarihlerini parse et
@@ -121,8 +165,11 @@ const analyzeIzinTalebi = async (izinTalebi, calisanBilgileri, departmanKotalari
     const requestedWorkingDays = calculateWorkingDays(startDate, endDate);
 
     // Kıdem ve izin hakkı hesapla
-    const seniority = calculateSeniority(calisanBilgileri.startDate);
+    const seniority = calculateSeniority(calisanBilgileri.workStartDate);
     const leaveRights = calculateLeaveRights(seniority);
+    
+    // 6 ay kontrolü - artık seniority bilgisini de gönderiyoruz
+    const hasCompletedSixMonths = checkWorkDuration(calisanBilgileri.workStartDate, seniority);
 
     // Yasaklı dönem kontrolü
     const restrictedPeriod = isRestrictedPeriod(startDate, endDate);
@@ -133,14 +180,18 @@ const analyzeIzinTalebi = async (izinTalebi, calisanBilgileri, departmanKotalari
     // Köprü izni kontrolü
     const isBridgeHoliday = checkBridgeHoliday(startDate, endDate);
 
+    // 1. derece yakın kontrolü
+    const isFirstDegreeRelated = isFirstDegreeRelativeRelated(izinTalebi.requestDesc);
+
     const prompt = `
 İzin Talebi Analizi:
 
 Çalışan Bilgileri:
 - Ad Soyad: ${calisanBilgileri.adSoyad}
 - Çalışan ID: ${calisanBilgileri.calisanId}
-- İşe Başlama Tarihi: ${calisanBilgileri.startDate}
-- Kıdem: ${seniority} yıl
+- İşe Başlama Tarihi: ${new Date(calisanBilgileri.workStartDate).toLocaleDateString('tr-TR')}
+- Kıdem: ${seniority} yıl (${Math.round(seniority * 12)} ay)
+- 6 Ay Tamamlandı: ${hasCompletedSixMonths ? 'Evet' : 'Hayır'}
 - Yıllık İzin Hakkı: ${leaveRights} gün
 - Kalan İzin Hakkı: ${calisanBilgileri.remainingDays} gün
 
@@ -148,6 +199,7 @@ Talep Detayları:
 - Talep Tarihi: ${izinTalebi.requestedDates}
 - İstenen İş Günü Sayısı: ${requestedWorkingDays} gün (Pazar günleri hariç)
 - Açıklama: ${izinTalebi.requestDesc}
+- 1. Derece Yakın Durumu: ${isFirstDegreeRelated ? 'Evet' : 'Hayır'}
 
 Departman Kotası:
 - İstenen tarihlerde departman kotası: ${departmanKotalari.kalanKota} kişi
@@ -168,17 +220,15 @@ Departman Kotası:
 6. Departman kotası %20'yi geçemez
 7. Doğum günü izni yılda 1 gün olarak kullanılabilir
 8. Acil durum izinleri (sağlık, vefat) maksimum 5 gün olarak verilir
+9. 1. derece yakınlarla ilgili önemli durumlarda (hastalık, ameliyat, doğum, ölüm vb.) izin talepleri öncelikli olarak değerlendirilir
 
 Lütfen bu izin talebini analiz et ve aşağıdaki formatta yanıt ver:
 
 Durum: [Onaylanmalıdır/Reddedilmelidir]
-Gerekçe:
-- [Gerekçe 1]
-- [Gerekçe 2]
-- [Gerekçe 3]
+Gerekçe: [Bu çalışanın talebinin onaylanması/reddedilmesi için spesifik ve detaylı gerekçe]
 
 [Eğer reddedilmelidir ise:]
-Alternatif Öneri: [Alternatif tarih aralığı]
+Alternatif Öneri: [Bu çalışan için uygun olabilecek alternatif tarih aralığı ve nedenini açıkla]
 `;
 
     const completion = await openai.chat.completions.create({
@@ -193,16 +243,14 @@ Alternatif Öneri: [Alternatif tarih aralığı]
 4) Yaz kotası (maksimum 6 gün)
 5) Köprü izni kuralları
 6) Acil durum önceliği
-
-Önemli Notlar:
-- Pazar günleri izin hakkından düşülmez
-- İlk 6 ayını doldurmamış çalışanların izin talepleri reddedilir
-- Aynı pozisyonda izin çakışması durumunda kıdem süresi uzun olana öncelik verilir
-- Yaz döneminde maksimum 6 gün izin kullanılabilir
-- Köprü izni durumunda 1 gün otomatik uzatılır
-- Departman kotası %20'yi geçemez
-- Doğum günü izni yılda 1 gün olarak kullanılabilir
-- Acil durum izinleri maksimum 5 gün olarak verilir`
+7) Her çalışanın durumunu ayrı ayrı değerlendir
+8) Sadece o çalışanı etkileyen spesifik gerekçeleri belirt
+9) Genel kuralları listelemek yerine, o çalışanın durumuna özel analiz yap
+10) Eğer red gerekçesi varsa, sadece o gerekçeyi detaylı açıkla
+11) Alternatif öneri verirken çalışanın kalan izin hakkı ve departman kotasını göz önünde bulundur
+12) 1. derece yakınlarla ilgili önemli durumlarda (hastalık, ameliyat, doğum, ölüm vb.) izin taleplerini öncelikli olarak değerlendir
+13) 1. derece yakın durumlarında, diğer kısıtlamaları (yaz kotası, departman kotası vb.) ikincil planda tut
+`
         },
         {
           role: "user",

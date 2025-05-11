@@ -66,7 +66,7 @@ const IzinTalepleri = () => {
       const isoDate = `${year}-${month}-${day}`;
       
       const date = parseISO(isoDate);
-      return format(date, 'dd MMMM yyyy', { locale: tr });
+      return format(date, 'dd.MM.yyyy', { locale: tr });
     } catch (error) {
       console.error('Tarih formatlama hatası:', error, 'Tarih:', dateString);
       return dateString;
@@ -74,19 +74,19 @@ const IzinTalepleri = () => {
   };
 
   const formatDateRange = (dateRange) => {
-    try {
-      console.log('Formatting date range:', dateRange, 'Type:', typeof dateRange);
-      
-      if (!dateRange || typeof dateRange !== 'string' || !dateRange.includes('-')) {
-        console.error('Invalid date range:', dateRange);
-        return 'Geçersiz tarih aralığı';
-      }
+    if (!dateRange) return 'Geçersiz tarih aralığı';
+    
+    const [start, end] = dateRange.split('-');
+    return `${formatDate(start)} - ${formatDate(end)}`;
+  };
 
-      const [startDate, endDate] = dateRange.split('-');
-      return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+  const formatRequestTime = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      return format(date, 'dd.MM.yyyy HH:mm', { locale: tr });
     } catch (error) {
-      console.error('Tarih aralığı formatlama hatası:', error, 'Date range:', dateRange);
-      return dateRange;
+      console.error('Talep zamanı formatlama hatası:', error);
+      return dateString;
     }
   };
 
@@ -103,7 +103,7 @@ const IzinTalepleri = () => {
 
   if (loading) {
     return (
-      <Container sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+      <Container maxWidth="lg" sx={{ mt: 4, textAlign: 'center' }}>
         <CircularProgress />
       </Container>
     );
@@ -150,7 +150,7 @@ const IzinTalepleri = () => {
                 console.log('Rendering talep:', talep);
                 return (
                   <TableRow key={talep._id}>
-                    <TableCell>{formatDate(talep.requestTime)}</TableCell>
+                    <TableCell>{formatRequestTime(talep.requestTime)}</TableCell>
                     <TableCell>{formatDateRange(talep.requestedDates)}</TableCell>
                     <TableCell>{talep.requestDesc}</TableCell>
                     <TableCell>

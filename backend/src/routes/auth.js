@@ -31,7 +31,8 @@ router.post('/login', async (req, res) => {
         email: user.email,
         role: user.role,
         pozisyon: user.pozisyon,
-        remainingDays: user.remainingDays
+        remainingDays: user.remainingDays,
+        workStartDate: user.workStartDate
       }
     });
   } catch (error) {

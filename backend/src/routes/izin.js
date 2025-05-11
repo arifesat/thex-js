@@ -19,18 +19,61 @@ router.get('/test-env', (req, res) => {
 router.post('/talep', auth, async (req, res) => {
   try {
     const { requestedDates, requestDesc } = req.body;
-    console.log('Gelen talep verisi:', { requestedDates, requestDesc });
+    console.log('Gelen talep verisi:', { 
+      requestedDates, 
+      requestDesc,
+      calisanId: req.user.calisanId,
+      user: req.user
+    });
     
     if (!requestedDates || typeof requestedDates !== 'string') {
-      return res.status(400).json({ error: 'Geçersiz tarih formatı' });
+      console.error('Geçersiz tarih formatı:', requestedDates);
+      return res.status(400).json({ 
+        error: 'Geçersiz tarih formatı',
+        details: 'requestedDates string olmalı ve DD.MM.YYYY-DD.MM.YYYY formatında olmalıdır'
+      });
+    }
+
+    if (!requestDesc || typeof requestDesc !== 'string') {
+      console.error('Geçersiz açıklama:', requestDesc);
+      return res.status(400).json({ 
+        error: 'Geçersiz açıklama',
+        details: 'requestDesc string olmalıdır'
+      });
+    }
+
+    // Tarih formatını kontrol et
+    const [startDate, endDate] = requestedDates.split('-');
+    const dateRegex = /^\d{2}\.\d{2}\.\d{4}$/;
+    
+    if (!dateRegex.test(startDate) || !dateRegex.test(endDate)) {
+      console.error('Geçersiz tarih formatı:', { startDate, endDate });
+      return res.status(400).json({ 
+        error: 'Geçersiz tarih formatı',
+        details: 'Tarihler DD.MM.YYYY formatında olmalıdır'
+      });
+    }
+
+    // calisanId'yi number'a çevir
+    const calisanId = Number(req.user.calisanId);
+    console.log('Converted calisanId:', calisanId);
+
+    if (isNaN(calisanId)) {
+      console.error('Geçersiz calisanId:', req.user.calisanId);
+      return res.status(400).json({
+        error: 'Geçersiz çalışan ID',
+        details: 'calisanId geçerli bir sayı olmalıdır'
+      });
     }
 
     const izinTalebi = new IzinTalebi({
-      calisanId: req.user.calisanId,
+      calisanId,
       requestedDates,
       requestDesc,
       requestTime: new Date()
     });
+
+    console.log('Oluşturulacak izin talebi:', izinTalebi);
 
     const savedTalep = await izinTalebi.save();
     console.log('Kaydedilen talep:', savedTalep);
@@ -38,9 +81,19 @@ router.post('/talep', auth, async (req, res) => {
     res.status(201).json(savedTalep);
   } catch (error) {
     console.error('İzin talebi oluşturma hatası:', error);
+    console.error('Hata detayları:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      keyPattern: error.keyPattern,
+      keyValue: error.keyValue
+    });
+    
     res.status(500).json({ 
       error: 'İzin talebi oluşturulamadı',
-      details: error.message 
+      details: error.message,
+      code: error.code
     });
   }
 });
@@ -154,6 +207,7 @@ router.get('/talepler', auth, isIKUzmani, async (req, res) => {
         requestTime: new Date(talepObj.requestTime).toISOString(),
         adSoyad: user ? user.adSoyad : 'Bilinmiyor',
         remainingDays: user ? user.remainingDays : 0,
+        workStartDate: user ? user.workStartDate : null,
         kidem: user ? Math.floor((new Date() - new Date(user.workStartDate)) / (1000 * 60 * 60 * 24 * 365)) : 0
       };
     }));

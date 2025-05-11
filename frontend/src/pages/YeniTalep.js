@@ -13,7 +13,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { tr } from 'date-fns/locale';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { izinService } from '../services/api';
 
 const YeniTalep = () => {
@@ -25,14 +25,20 @@ const YeniTalep = () => {
   const [loading, setLoading] = useState(false);
 
   const formatDateForDB = (date) => {
+    if (!date || !isValid(date)) return '';
     return format(date, 'dd.MM.yyyy');
+  };
+
+  const formatDateForDisplay = (date) => {
+    if (!date || !isValid(date)) return '';
+    return format(date, 'dd MMMM yyyy', { locale: tr });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!startDate || !endDate) {
-      setError('Lütfen başlangıç ve bitiş tarihlerini seçin');
+    if (!startDate || !endDate || !isValid(startDate) || !isValid(endDate)) {
+      setError('Lütfen geçerli başlangıç ve bitiş tarihlerini seçin');
       return;
     }
 
@@ -51,7 +57,12 @@ const YeniTalep = () => {
       setError('');
       
       const dateRange = `${formatDateForDB(startDate)}-${formatDateForDB(endDate)}`;
-      console.log('Gönderilecek tarih aralığı:', dateRange);
+      console.log('Gönderilecek veriler:', {
+        requestedDates: dateRange,
+        requestDesc: requestDesc.trim(),
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString()
+      });
       
       const response = await izinService.createTalep({
         requestedDates: dateRange,
@@ -62,6 +73,11 @@ const YeniTalep = () => {
       navigate('/taleplerim');
     } catch (err) {
       console.error('Talep oluşturma hatası:', err);
+      console.error('Hata detayları:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
       setError('Talep oluşturulurken bir hata oluştu');
     } finally {
       setLoading(false);
@@ -91,24 +107,25 @@ const YeniTalep = () => {
                 <DatePicker
                   label="Başlangıç Tarihi"
                   value={startDate}
-                  onChange={setStartDate}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
+                  onChange={(newValue) => setStartDate(newValue)}
+                  slotProps={{ textField: { fullWidth: true } }}
                 />
                 <DatePicker
                   label="Bitiş Tarihi"
                   value={endDate}
-                  onChange={setEndDate}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
+                  onChange={(newValue) => setEndDate(newValue)}
+                  slotProps={{ textField: { fullWidth: true } }}
+                  minDate={startDate}
                 />
               </Box>
               
-              {startDate && endDate && (
+              {startDate && endDate && isValid(startDate) && isValid(endDate) && (
                 <Box sx={{ mt: 2 }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Seçilen Tarih Aralığı:
                   </Typography>
                   <Typography>
-                    {format(startDate, 'dd MMMM yyyy', { locale: tr })} - {format(endDate, 'dd MMMM yyyy', { locale: tr })}
+                    {formatDateForDisplay(startDate)} - {formatDateForDisplay(endDate)}
                   </Typography>
                 </Box>
               )}

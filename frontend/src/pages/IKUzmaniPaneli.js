@@ -24,6 +24,8 @@ import {
   Divider
 } from '@mui/material';
 import { izinService } from '../services/api';
+import { format, differenceInDays } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 const IKUzmaniPaneli = () => {
   const [talepler, setTalepler] = useState([]);
@@ -92,7 +94,13 @@ const IKUzmaniPaneli = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('tr-TR');
+    try {
+      const date = new Date(dateString);
+      return format(date, 'dd.MM.yyyy HH:mm', { locale: tr });
+    } catch (error) {
+      console.error('Tarih formatlama hatası:', error);
+      return dateString;
+    }
   };
 
   const parseDateRange = (dateRange) => {
@@ -105,6 +113,42 @@ const IKUzmaniPaneli = () => {
 
     const duration = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
     return { start, end, duration };
+  };
+
+  const calculateSeniority = (startDate) => {
+    try {
+      console.log('Original startDate:', startDate);
+      
+      // ISO formatındaki tarihi parse et
+      const start = new Date(startDate);
+      // Referans tarihi olarak 1 Ocak 2024'ü kullan
+      const referenceDate = new Date('2024-01-01');
+      
+      console.log('Parsed start date:', start);
+      console.log('Reference date:', referenceDate);
+      
+      // Toplam gün sayısını hesapla
+      const diffDays = differenceInDays(referenceDate, start);
+      console.log('Difference in days:', diffDays);
+      
+      // 6 aydan kısa çalışma süresi kontrolü (yaklaşık 180 gün)
+      if (diffDays < 180) {
+        return '6 aydan kısa';
+      }
+      
+      // Yıl olarak hesapla (ondalıklı)
+      const years = diffDays / 365;
+      console.log('Years:', years);
+      
+      // 0.5'e yuvarla (6 aylık hassasiyet)
+      const roundedYears = Math.round(years * 2) / 2;
+      console.log('Rounded years:', roundedYears);
+      
+      return roundedYears;
+    } catch (error) {
+      console.error('Kıdem hesaplama hatası:', error, 'Start date:', startDate);
+      return '6 aydan kısa';
+    }
   };
 
   return (
@@ -150,6 +194,7 @@ const IKUzmaniPaneli = () => {
               ) : (
                 talepler.map((talep) => {
                   const { start, end, duration } = parseDateRange(talep.requestedDates);
+                  const seniority = calculateSeniority(talep.workStartDate);
                   return (
                     <TableRow key={talep._id}>
                       <TableCell>{talep.calisanId}</TableCell>
@@ -163,7 +208,9 @@ const IKUzmaniPaneli = () => {
                       </TableCell>
                       <TableCell>{duration} gün</TableCell>
                       <TableCell>{talep.remainingDays} gün</TableCell>
-                      <TableCell>{talep.kidem}</TableCell>
+                      <TableCell>
+                        {typeof seniority === 'string' ? seniority : `${seniority} yıl`}
+                      </TableCell>
                       <TableCell>{talep.requestDesc}</TableCell>
                       <TableCell>{formatDate(talep.requestTime)}</TableCell>
                       <TableCell>

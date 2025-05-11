@@ -27,13 +27,24 @@ const Navbar = () => {
     <AppBar position="static">
       <Container maxWidth="lg">
         <Toolbar disableGutters>
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}
-          >
-            İzin Yönetim Sistemi
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+            <img 
+              src="/images/talenteerLogo.png" 
+              alt="Talenteer Logo" 
+              style={{ height: '40px', marginRight: '12px' }}
+            />
+            <Typography
+              variant="h6"
+              component="div"
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                fontWeight: 'bold'
+              }}
+            >
+              Talenteer İnşaat
+            </Typography>
+          </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Typography variant="body1" sx={{ mr: 2 }}>

@@ -28,8 +28,7 @@ const izinTalebiSchema = new mongoose.Schema({
     timestamp: Date,
     status: {
       type: String,
-      enum: ['Onaylanmalıdır', 'Reddedilmelidir'],
-      default: null
+      enum: ['Onaylanmalıdır', 'Reddedilmelidir']
     },
     gerekce: [String],
     alternatifOneri: String
