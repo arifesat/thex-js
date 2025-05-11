@@ -60,9 +60,16 @@ const IKUzmaniPaneli = () => {
   const [departmentStats, setDepartmentStats] = useState([]);
   const [dateStats, setDateStats] = useState([]);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [calisanlar, setCalisanlar] = useState([]);
+  const [departmanStats, setDepartmanStats] = useState([]);
+  const [userRole, setUserRole] = useState('user'); // Varsayılan olarak normal kullanıcı
 
   useEffect(() => {
     fetchTalepler();
+    fetchCalisanlar();
+    // Kullanıcı rolünü localStorage'dan al
+    const role = localStorage.getItem('userRole') || 'user';
+    setUserRole(role);
   }, []);
 
   const fetchTalepler = async () => {
@@ -77,6 +84,15 @@ const IKUzmaniPaneli = () => {
       setError('Talepler yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCalisanlar = async () => {
+    try {
+      const response = await izinService.getAllCalisanlar();
+      setCalisanlar(response || []);
+    } catch (error) {
+      setError('Çalışanlar yüklenirken hata oluştu');
     }
   };
 
@@ -197,7 +213,10 @@ const IKUzmaniPaneli = () => {
   };
 
   const prepareDepartmentStats = (talepler) => {
-    const stats = talepler.reduce((acc, talep) => {
+    // Sadece onaylanmış izin taleplerini filtrele
+    const onaylananTalepler = talepler.filter(talep => talep.requestStatus === 'Onaylandı');
+    
+    const stats = onaylananTalepler.reduce((acc, talep) => {
       const duration = parseDateRange(talep.requestedDates).duration;
       const existingDept = acc.find(item => item.department === talep.pozisyon);
       
@@ -242,12 +261,33 @@ const IKUzmaniPaneli = () => {
       .sort((a, b) => new Date(a.date) - new Date(b.date));
   };
 
+  const getDepartmanStats = (calisanlar, talepler) => {
+    const calisanlarWithDept = calisanlar.map(c => ({
+      ...c,
+      departman: POZISYON_TO_DEPARTMAN[c.pozisyon] || "Diğer"
+    }));
+    
+    // Sadece onaylanmış izin taleplerini filtrele
+    const onaylananTalepler = talepler.filter(talep => talep.requestStatus === 'Onaylandı');
+    const izinliCalisanIdSet = new Set(onaylananTalepler.map(t => t.calisanId));
+    
+    return DEPARTMANLAR.map(dept => {
+      const deptCalisanlar = calisanlarWithDept.filter(c => c.departman === dept);
+      const izinliSayisi = deptCalisanlar.filter(c => izinliCalisanIdSet.has(c.calisanId)).length;
+      return {
+        departman: dept,
+        toplamCalisan: deptCalisanlar.length,
+        izinliCalisan: izinliSayisi
+      };
+    });
+  };
+
   const loadDashboardStats = async () => {
     try {
       setLoadingStats(true);
       const response = await izinService.getAllTalepler();
-      setDepartmentStats(prepareDepartmentStats(response));
       setDateStats(prepareDateStats(response));
+      setDepartmanStats(getDepartmanStats(calisanlar, response));
     } catch (error) {
       console.error('İstatistikler yüklenemedi:', error);
       setError('İstatistikler yüklenirken bir hata oluştu');
@@ -280,6 +320,30 @@ const IKUzmaniPaneli = () => {
     }
     return null;
   };
+
+  // Pozisyon -> Departman eşlemesi
+  const POZISYON_TO_DEPARTMAN = {
+    "Şantiye Şefi": "Şantiye Yönetimi",
+    "Vinc Operatörü": "Şantiye Yönetimi",
+    "Vinç Operatörü": "Şantiye Yönetimi",
+    "İnşaat İşçisi": "Şantiye Yönetimi",
+    "Proje Yöneticisi": "Şantiye Yönetimi",
+    "Makine Operatörü": "Şantiye Yönetimi",
+    "Mimar": "Mühendislik",
+    "İnşaat Mühendisi": "Mühendislik",
+    "Elektrik Mühendisi": "Mühendislik",
+    "İş Güvenliği Uzmanı": "Mühendislik",
+    "İK Uzmanı": "İK",
+    "Muhasebe Sorumlusu": "Muhasebe",
+    "Kalite Kontrol": "Kalite Kontrol"
+  };
+  const DEPARTMANLAR = [
+    "Şantiye Yönetimi",
+    "Mühendislik",
+    "İK",
+    "Muhasebe",
+    "Kalite Kontrol"
+  ];
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -435,6 +499,9 @@ const IKUzmaniPaneli = () => {
         onClose={() => setOpenAnalysisDialog(false)}
         maxWidth="md"
         fullWidth
+        scroll="body"
+        keepMounted
+        disableScrollLock
         PaperProps={{
           sx: {
             borderRadius: 3,
@@ -695,6 +762,53 @@ const IKUzmaniPaneli = () => {
                       </LineChart>
                     </ResponsiveContainer>
                   </Box>
+                </Paper>
+              </Grid>
+              {/* Departman Bazlı İstatistikler */}
+              <Grid item xs={12} md={6}>
+                <Paper sx={{ p: 3, height: '100%' }}>
+                  <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
+                    Departman Bazlı İstatistikler
+                  </Typography>
+                  <Box sx={{ height: 300 }}>
+                    <ResponsiveContainer>
+                      <BarChart data={departmanStats}>
+                        <XAxis dataKey="departman" />
+                        <YAxis />
+                        <RechartsTooltip />
+                        <Legend />
+                        <Bar dataKey="toplamCalisan" fill="#8884d8" name="Toplam Çalışan" />
+                        <Bar dataKey="izinliCalisan" fill="#82ca9d" name="İzinli Çalışan" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Box>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Paper sx={{ p: 3, height: '100%' }}>
+                  <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
+                    Departman Detayları
+                  </Typography>
+                  <TableContainer>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Departman</TableCell>
+                          <TableCell align="right">Toplam Çalışan</TableCell>
+                          <TableCell align="right">İzinli Çalışan</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {departmanStats.map((row) => (
+                          <TableRow key={row.departman}>
+                            <TableCell>{row.departman}</TableCell>
+                            <TableCell align="right">{row.toplamCalisan}</TableCell>
+                            <TableCell align="right">{row.izinliCalisan}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
                 </Paper>
               </Grid>
             </Grid>

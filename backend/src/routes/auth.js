@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { auth } = require('../middleware/auth');
+const { auth, isIKUzmani } = require('../middleware/auth');
 
 // Login route
 router.post('/login', async (req, res) => {
@@ -49,6 +49,19 @@ router.get('/me', auth, async (req, res) => {
     res.json(user);
   } catch (error) {
     res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
+// Get all employees (only for IK Uzmanı)
+router.get('/calisanlar', auth, isIKUzmani, async (req, res) => {
+  try {
+    const calisanlar = await User.find()
+      .select('-password')
+      .sort({ adSoyad: 1 });
+    res.json(calisanlar);
+  } catch (error) {
+    console.error('Çalışanlar getirme hatası:', error);
+    res.status(500).json({ error: 'Çalışanlar getirilemedi' });
   }
 });
 

@@ -203,10 +203,7 @@ Talep Detayları:
 - Açıklama: ${izinTalebi.requestDesc}
 - 1. Derece Yakın Durumu: ${isFirstDegreeRelated ? 'Evet' : 'Hayır'}
 
-Departman Kotası:
-- İstenen tarihlerde departman kotası: ${departmanKotalari.kalanKota} kişi
-- Toplam departman kotası: ${departmanKotalari.toplamKota} kişi
-- Maksimum izinli çalışan oranı: %20
+
 
 Özel Durumlar:
 - Köprü İzni: ${isBridgeHoliday ? 'Evet' : 'Hayır'}
@@ -219,7 +216,7 @@ Departman Kotası:
 3. Aynı pozisyonda izin çakışması durumunda kıdem süresi uzun olana öncelik verilir
 4. Yaz döneminde (1 Haziran - 31 Ağustos) maksimum 6 gün izin kullanılabilir
 5. Köprü izni durumunda 1 gün otomatik uzatılır
-6. Departman kotası %20'yi geçemez
+6. Bos
 7. Doğum günü izni yılda 1 gün olarak kullanılabilir
 8. Acil durum izinleri (sağlık, vefat) maksimum 5 gün olarak verilir
 9. 1. derece yakınlarla ilgili önemli durumlarda (hastalık, ameliyat, doğum, ölüm vb.) izin talepleri öncelikli olarak değerlendirilir
@@ -229,6 +226,16 @@ Departman Kotası:
     - Çalışan (Seviye 1)
 11. Aynı pozisyon seviyesindeki çalışanlar arasında kıdem süresi uzun olana öncelik verilir
 12. Yüksek pozisyon seviyesindeki çalışanların izin talepleri, aynı tarihte düşük pozisyon seviyesindeki çalışanların taleplerine göre öncelikli değerlendirilir
+13. Kalan izin günü sayısı, istenilen izin günü sayısından fazla ise bu konuda yorum yapılmamalı, çalışanın insiyatifine bırakılmalıdır.
+14. Çalışanın işte çalışması süresi bugün tarih 1 Ocak 2024 imiş gibi değerlendirilir.
+
+Mevcut Departman Çalışan Sayıları:
+Şantiye Yönetimi:19
+Mühendislik:18	
+Kalite Kontrol:7		
+Muhasebe:3		
+İK:3		
+
 
 Lütfen bu izin talebini analiz et ve aşağıdaki formatta yanıt ver:
 
@@ -239,8 +246,13 @@ Gerekçe: [Bu çalışanın talebinin onaylanması/reddedilmesi için spesifik v
 Alternatif Öneri: [Bu çalışan için uygun olabilecek alternatif tarih aralığı ve nedenini açıkla]
 `;
 
+// Departman Kotası:
+// - İstenen tarihlerde departman kotası: ${departmanKotalari.kalanKota} kişi
+// - Toplam departman kotası: ${departmanKotalari.toplamKota} kişi
+// - Maksimum izinli çalışan oranı: %20
+
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4.1-mini",
       messages: [
         {
           role: "system",

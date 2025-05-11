@@ -73,6 +73,10 @@ export const izinService = {
   updateTalepStatus: async (talepId, newStatus) => {
     const response = await api.put(`/izin/talep/${talepId}`, { requestStatus: newStatus });
     return response.data;
+  },
+  getAllCalisanlar: async () => {
+    const response = await api.get('/auth/calisanlar');
+    return response.data;
   }
 };
 
