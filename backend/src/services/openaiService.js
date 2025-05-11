@@ -189,6 +189,8 @@ const analyzeIzinTalebi = async (izinTalebi, calisanBilgileri, departmanKotalari
 Çalışan Bilgileri:
 - Ad Soyad: ${calisanBilgileri.adSoyad}
 - Çalışan ID: ${calisanBilgileri.calisanId}
+- Pozisyon: ${calisanBilgileri.pozisyon}
+- Pozisyon Seviyesi: ${calisanBilgileri.pozisyonSeviyesi}
 - İşe Başlama Tarihi: ${new Date(calisanBilgileri.workStartDate).toLocaleDateString('tr-TR')}
 - Kıdem: ${seniority} yıl (${Math.round(seniority * 12)} ay)
 - 6 Ay Tamamlandı: ${hasCompletedSixMonths ? 'Evet' : 'Hayır'}
@@ -221,6 +223,12 @@ Departman Kotası:
 7. Doğum günü izni yılda 1 gün olarak kullanılabilir
 8. Acil durum izinleri (sağlık, vefat) maksimum 5 gün olarak verilir
 9. 1. derece yakınlarla ilgili önemli durumlarda (hastalık, ameliyat, doğum, ölüm vb.) izin talepleri öncelikli olarak değerlendirilir
+10. Pozisyon bazlı öncelik sıralaması:
+    - Müdür (Seviye 3)
+    - Şef/Uzman/İK Uzmanı (Seviye 2)
+    - Çalışan (Seviye 1)
+11. Aynı pozisyon seviyesindeki çalışanlar arasında kıdem süresi uzun olana öncelik verilir
+12. Yüksek pozisyon seviyesindeki çalışanların izin talepleri, aynı tarihte düşük pozisyon seviyesindeki çalışanların taleplerine göre öncelikli değerlendirilir
 
 Lütfen bu izin talebini analiz et ve aşağıdaki formatta yanıt ver:
 
@@ -237,7 +245,7 @@ Alternatif Öneri: [Bu çalışan için uygun olabilecek alternatif tarih aralı
         {
           role: "system",
           content: `Sen bir İK uzmanısın. İzin taleplerini şu kriterlere göre değerlendiriyorsun:
-1) Kıdem sıralaması ve izin hakkı
+1) Pozisyon seviyesi ve kıdem sıralaması
 2) Departman kotası (%20 limit)
 3) Yasaklı dönemler
 4) Yaz kotası (maksimum 6 gün)
@@ -250,7 +258,8 @@ Alternatif Öneri: [Bu çalışan için uygun olabilecek alternatif tarih aralı
 11) Alternatif öneri verirken çalışanın kalan izin hakkı ve departman kotasını göz önünde bulundur
 12) 1. derece yakınlarla ilgili önemli durumlarda (hastalık, ameliyat, doğum, ölüm vb.) izin taleplerini öncelikli olarak değerlendir
 13) 1. derece yakın durumlarında, diğer kısıtlamaları (yaz kotası, departman kotası vb.) ikincil planda tut
-
+14) Pozisyon seviyesi yüksek olan çalışanların taleplerine öncelik ver
+15) Aynı pozisyon seviyesindeki çalışanlar arasında kıdem süresi uzun olana öncelik ver
 `
         },
         {

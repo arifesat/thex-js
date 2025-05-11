@@ -290,31 +290,56 @@ const IKUzmaniPaneli = () => {
         <DialogTitle>AI Analiz Sonucu</DialogTitle>
         <DialogContent>
           {selectedTalep?.aiAnalysis && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                {selectedTalep.adSoyad} (ID {selectedTalep.calisanId})
-              </Typography>
-              <Typography variant="subtitle1" gutterBottom>
-                Talep Tarihi: {selectedTalep.requestedDates}
-              </Typography>
-              
+            <Box sx={{ 
+              mt: 2, 
+              p: 3, 
+              bgcolor: selectedTalep.aiAnalysis.status === 'Reddedilmelidir' ? '#fff3f3' : '#f3fff3',
+              borderRadius: 2,
+              boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+            }}>
               <Box sx={{ 
-                mt: 2, 
-                p: 2, 
-                bgcolor: selectedTalep.aiAnalysis.status === 'Reddedilmelidir' ? '#fff3f3' : '#f3fff3',
-                borderRadius: 1
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                mb: 3,
+                pb: 2,
+                borderBottom: '2px solid',
+                borderColor: selectedTalep.aiAnalysis.status === 'Reddedilmelidir' ? 'error.light' : 'success.light'
               }}>
-                <Typography 
-                  variant="h6" 
+                <Box>
+                  <Typography 
+                    variant="h6" 
+                    color="text.secondary"
+                    sx={{ 
+                      fontWeight: 500,
+                      letterSpacing: '0.3px',
+                      mb: 0.5
+                    }}
+                  >
+                    {selectedTalep.adSoyad}
+                  </Typography>
+                  <Typography 
+                    variant="body2" 
+                    color="text.secondary"
+                    sx={{ 
+                      fontWeight: 400,
+                      letterSpacing: '0.2px'
+                    }}
+                  >
+                    ID: {selectedTalep.calisanId}
+                  </Typography>
+                </Box>
+                <Chip
+                  label={selectedTalep.aiAnalysis.status}
                   color={selectedTalep.aiAnalysis.status === 'Reddedilmelidir' ? 'error' : 'success'}
                   gutterBottom
                 >
                   Durum: {selectedTalep.aiAnalysis.status}
                 </Typography>
                 
-                {/* <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
                   Gerekçeler:
-                </Typography> */}
+                </Typography>
                 <List>
                   {selectedTalep.aiAnalysis.gerekce.map((gerekce, index) => (
                     <ListItem key={index} sx={{ py: 0.5 }}>
@@ -329,9 +354,9 @@ const IKUzmaniPaneli = () => {
                 </List>
 
                 <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(0,0,0,0.03)', borderRadius: 1 }}>
-                  {/* <Typography variant="subtitle2" gutterBottom>
+                  <Typography variant="subtitle2" gutterBottom>
                     Detaylı Açıklama:
-                  </Typography> */}
+                  </Typography>
                   <Typography
                     component="pre"
                     sx={{
@@ -359,8 +384,21 @@ const IKUzmaniPaneli = () => {
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenAnalysisDialog(false)}>Kapat</Button>
+        <DialogActions sx={{ px: 3, py: 2.5 }}>
+          <Button 
+            onClick={() => setOpenAnalysisDialog(false)}
+            variant="contained"
+            color={selectedTalep?.aiAnalysis?.status === 'Reddedilmelidir' ? 'error' : 'success'}
+            sx={{ 
+              px: 4,
+              py: 1.5,
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '1.1rem'
+            }}
+          >
+            Kapat
+          </Button>
         </DialogActions>
       </Dialog>
     </Container>
