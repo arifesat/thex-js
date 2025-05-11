@@ -21,8 +21,12 @@ import {
   List,
   ListItem,
   ListItemText,
-  Divider
+  Divider,
+  IconButton,
+  Tooltip
 } from '@mui/material';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
+import BarChartIcon from '@mui/icons-material/BarChart';
 import { izinService } from '../services/api';
 import { format, differenceInDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -32,6 +36,7 @@ const IKUzmaniPaneli = () => {
   const [selectedTalep, setSelectedTalep] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [openAnalysisDialog, setOpenAnalysisDialog] = useState(false);
+  const [openChartDialog, setOpenChartDialog] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
@@ -151,11 +156,70 @@ const IKUzmaniPaneli = () => {
     }
   };
 
+  const prepareChartData = () => {
+    const data = talepler.reduce((acc, talep) => {
+      const duration = parseDateRange(talep.requestedDates).duration;
+      const existingEntry = acc.find(item => item.name === talep.adSoyad);
+      
+      if (existingEntry) {
+        existingEntry.value += duration;
+      } else {
+        acc.push({
+          name: talep.adSoyad,
+          value: duration,
+          id: talep._id
+        });
+      }
+      return acc;
+    }, []);
+
+    return data;
+  };
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
+
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      return (
+        <Box sx={{ 
+          bgcolor: 'background.paper', 
+          p: 1.5, 
+          borderRadius: 1,
+          boxShadow: 1,
+          border: '1px solid',
+          borderColor: 'divider'
+        }}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {payload[0].name}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {payload[0].value} gün izin talebi
+          </Typography>
+        </Box>
+      );
+    }
+    return null;
+  };
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        İzin Talepleri Yönetimi
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4">
+          İzin Talepleri Yönetimi
+        </Typography>
+        <Tooltip title="İzin Talepleri Dağılımı">
+          <IconButton 
+            onClick={() => setOpenChartDialog(true)}
+            sx={{ 
+              bgcolor: 'primary.main',
+              color: 'white',
+              '&:hover': { bgcolor: 'primary.dark' }
+            }}
+          >
+            <BarChartIcon />
+          </IconButton>
+        </Tooltip>
+      </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -406,6 +470,48 @@ const IKUzmaniPaneli = () => {
           >
             Kapat
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Chart Dialog */}
+      <Dialog 
+        open={openChartDialog} 
+        onClose={() => setOpenChartDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>İzin Talepleri Dağılımı</DialogTitle>
+        <DialogContent>
+          <Box sx={{ height: 400, width: '100%', mt: 2 }}>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie
+                  data={prepareChartData()}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={150}
+                  fill="#8884d8"
+                  dataKey="value"
+                  onClick={(data) => {
+                    const talep = talepler.find(t => t._id === data.id);
+                    if (talep) {
+                      handleAnalyze(talep);
+                      setOpenChartDialog(false);
+                    }
+                  }}
+                >
+                  {prepareChartData().map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <RechartsTooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenChartDialog(false)}>Kapat</Button>
         </DialogActions>
       </Dialog>
     </Container>
